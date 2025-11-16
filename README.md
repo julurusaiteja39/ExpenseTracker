@@ -1,45 +1,41 @@
 # Personal Finance Advisor with OCR (Agentic RAG)
 
-This project is an end-to-end demo you can put on your resume:
+FastAPI + LangGraph + React demo that OCRs receipts, parses transactions, stores them in a FAISS vector store, and answers spend questions with RAG.
 
-- **Backend**: FastAPI + LangChain + LangGraph + RAG + FAISS vector store
-- **Frontend**: Simple React UI (CDN) for uploading receipts and asking questions
-- **NLP / AI**:
-  - OCR on receipt images (Pytesseract)
-  - Lightweight NLP parsing of receipts
-  - Vectorization of transactions with embeddings
-  - Retrieval-Augmented Generation (RAG) over your past spending
-  - Agentic workflow with LangGraph (multi-step graph: retrieve → analyze → answer)
+- **Backend**: FastAPI, LangChain, LangGraph, FAISS, OpenAI embeddings/LLM, Pytesseract OCR
+- **Frontend**: Vite + React, responsive UI for upload/ask/inspect/reset
+- **NLP / AI**: OCR, regex-based parsing (amount/merchant/date/category), embeddings + retriever + multi-step LangGraph (retrieve → analyze → answer)
+- **Quality of life**: Date extractor handles `YYYY-MM-DD`, `MM/DD/YYYY`, `MM-DD-YYYY`, `MM/DD/YY`; falls back to today’s upload date if none is found. One-click “Delete all data” to reset transactions/vector store.
 
 ## Folder structure
 
-- `backend/` – FastAPI app and LangGraph workflow
-- `frontend/` – Plain React frontend (open `index.html` directly)
+- `backend/` — FastAPI app, OCR, LangGraph workflow, storage utilities
+- `frontend/` — Vite + React app (development server and production build)
 
 ---
 
-## 1. Backend setup
+## 1) Backend setup
 
 From the `backend` folder:
 
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\activate   # on Windows
-# source .venv/bin/activate  # on macOS / Linux
+.venv\Scripts\activate      # Windows
+# source .venv/bin/activate # macOS/Linux
 
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Create a `.env` file:
+Create and fill `.env`:
 
 ```bash
-copy .env.example .env   # Windows
-# or: cp .env.example .env
+copy .env.example .env      # Windows
+# cp .env.example .env      # macOS/Linux
 ```
 
-Edit `.env` and set your OpenAI key (and optionally model names):
+Set your keys/models:
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -53,47 +49,45 @@ Run the backend:
 uvicorn backend.main:app --reload
 ```
 
-It should start on `http://127.0.0.1:8000`.
-
-- Test health:
-  - Open `http://127.0.0.1:8000/` in the browser
-- API docs:
-  - `http://127.0.0.1:8000/docs`
+Check:
+- Health: http://127.0.0.1:8000/
+- Docs: http://127.0.0.1:8000/docs
 
 ---
 
-## 2. Frontend
+## 2) Frontend (Vite + React)
 
-The frontend is intentionally very simple. No bundler needed.
+From `frontend`:
 
 ```bash
-cd frontend
+npm install
+npm run dev      # start dev server (default http://127.0.0.1:5173)
+npm run build    # production build to dist/
+npm run preview  # serve the production build locally
 ```
 
-Just open `index.html` in your browser (double-click or open via VS Code "Open with Live Server").
-
-By default, it talks to the backend at `http://127.0.0.1:8000`.
-
-Features:
-
-- Upload a receipt image → backend runs OCR + NLP → stores a parsed transaction + adds to vector store
-- Ask natural language questions like:
-  - "How much did I spend on groceries last month?"
-  - "What are my biggest spending categories?"
-  - "How much did I spend on Uber last week?"
-- Backend uses:
-  - FAISS vector store + embeddings (vectorization)
-  - LangGraph workflow:
-    - `retrieve` node: retrieve relevant transactions with RAG
-    - `analyze` node: summarize spending pattern
-    - `answer` node: generate final answer + tips
+Configuration:
+- Backend URL: set `VITE_BACKEND_URL` in a `.env` file in `frontend/` (defaults to `http://127.0.0.1:8000`).
+- The UI includes:
+  - Upload receipt (OCR + parse + store + embed)
+  - Ask question (calls LangGraph workflow)
+  - View stored transactions
+  - Delete all data button (calls `/reset_data`)
 
 ---
 
-## 3. Good phrases for your resume
+## 3) Resetting data
+
+- Via frontend: click “Delete all data” in the Stored transactions card (with confirmation).
+- Via API: `POST http://127.0.0.1:8000/reset_data`
+- Manual: remove `backend/data/transactions.jsonl` and the vector store folder `backend/data/vectorstore/` (will auto-recreate on next upload).
+
+---
+
+## 4) Good phrases for your resume
 
 - Built an **agentic AI Personal Finance Advisor** using **LangGraph** and **LangChain**.
-- Implemented **RAG** over a **FAISS vector store** of OCR'd receipts (transaction embeddings with OpenAI).
-- Designed a multi-step **LangGraph workflow** for question understanding, retrieval, analysis, and answer generation.
-- Integrated **OCR (Pytesseract)** and lightweight **NLP parsing** to extract structured transactions from raw receipt images.
-- Exposed the system via a **FastAPI backend** and a minimal **React frontend** for interactive analysis.
+- Implemented **RAG** over a **FAISS vector store** of OCR’d receipts (OpenAI embeddings).
+- Designed a multi-step **LangGraph workflow** (retrieve → analyze → answer) for spend Q&A.
+- Integrated **OCR (Pytesseract)** and lightweight **NLP parsing** (amount/merchant/date/category) with sensible fallbacks.
+- Shipped a **FastAPI backend** and a **responsive Vite + React frontend** with one-click data reset.
