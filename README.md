@@ -83,11 +83,3 @@ Configuration:
 - Manual: remove `backend/data/transactions.jsonl` and the vector store folder `backend/data/vectorstore/` (will auto-recreate on next upload).
 
 ---
-
-## 4) Good phrases for your resume
-
-- Built an **agentic AI Personal Finance Advisor** using **LangGraph** and **LangChain**.
-- Implemented **RAG** over a **FAISS vector store** of OCR’d receipts (OpenAI embeddings).
-- Designed a multi-step **LangGraph workflow** (retrieve → analyze → answer) for spend Q&A.
-- Integrated **OCR (Pytesseract)** and lightweight **NLP parsing** (amount/merchant/date/category) with sensible fallbacks.
-- Shipped a **FastAPI backend** and a **responsive Vite + React frontend** with one-click data reset.
