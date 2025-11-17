@@ -70,7 +70,6 @@ async def upload_receipt(file: UploadFile = File(...)):
     contents = await file.read()
     ocr_text = extract_text(contents)
     parsed = simple_parse_receipt(ocr_text)
-    print("Parsed receipt:", parsed)
     if not parsed.get("date"):
         # Fallback to upload date when invoice date is missing
         parsed["date"] = datetime.date.today().isoformat()

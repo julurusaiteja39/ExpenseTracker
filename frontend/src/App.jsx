@@ -157,10 +157,6 @@ export default function App() {
           spending. The backend runs OCR, parses the receipt, stores it in a
           vector DB, and uses a LangGraph workflow to answer with context.
         </p>
-        <div className="hero__meta">
-          <span className="meta">Backend: FastAPI @ {backendBase}</span>
-          <span className="meta">Frontend: Vite + React</span>
-        </div>
       </header>
 
       <div className="grid two">
