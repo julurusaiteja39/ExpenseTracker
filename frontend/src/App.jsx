@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_BACKEND = "http://127.0.0.1:8000";
 
@@ -34,10 +34,17 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const responseRef = useRef(null);
 
   useEffect(() => {
     loadTransactions();
   }, []);
+
+  useEffect(() => {
+    if (responseRef.current && (answer || retrieved || error)) {
+      responseRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [answer, retrieved, error]);
 
   const handleAsk = async () => {
     setError("");
@@ -150,7 +157,7 @@ export default function App() {
   return (
     <div className="page">
       <header className="hero">
-        <div className="pill">Agentic RAG · OCR · LangGraph</div>
+        <div className="pill">Agentic RAG | OCR | LangGraph</div>
         <h1>Personal Finance Advisor</h1>
         <p>
           Upload receipt images, then ask natural language questions about your
@@ -159,75 +166,35 @@ export default function App() {
         </p>
       </header>
 
-      <div className="grid two">
-        <Card
-          title="Upload a receipt"
-          subtitle="We run OCR + simple parsing and add the transaction to your vector store."
-        >
-          <div className="stack">
-            <label className="file-input">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={uploading}
-              />
-              <span>{file ? file.name : "Choose an image file"}</span>
-            </label>
-            <div className="actions">
-              <button onClick={handleUpload} disabled={uploading}>
-                {uploading ? "Processing..." : "Upload & Parse"}
-              </button>
-              <button
-                className="ghost"
-                onClick={() => setFile(null)}
-                disabled={uploading || !file}
-              >
-                Clear
-              </button>
-            </div>
-            {uploadStatus && <Status tone="success">{uploadStatus}</Status>}
-          </div>
-        </Card>
-
-        <Card
-          title="Ask a finance question"
-          subtitle='Examples: "How much did I spend on groceries last month?" or "What are my biggest spending categories?"'
-        >
-          <div className="stack">
-            <textarea
-              rows="4"
-              placeholder="Type your question..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+      <Card
+        title="Upload a receipt"
+        subtitle="We run OCR + simple parsing and add the transaction to your vector store."
+      >
+        <div className="stack">
+          <label className="file-input">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={uploading}
             />
-            <div className="actions">
-              <button onClick={handleAsk} disabled={loading}>
-                {loading ? "Thinking..." : "Ask Advisor"}
-              </button>
-              <button className="ghost" onClick={() => setQuestion("")}>
-                Clear
-              </button>
-            </div>
+            <span>{file ? file.name : "Choose an image file"}</span>
+          </label>
+          <div className="actions">
+            <button onClick={handleUpload} disabled={uploading}>
+              {uploading ? "Processing..." : "Upload & Parse"}
+            </button>
+            <button
+              className="ghost"
+              onClick={() => setFile(null)}
+              disabled={uploading || !file}
+            >
+              Clear
+            </button>
           </div>
-        </Card>
-      </div>
-
-      {error && (
-        <Status tone="error">Error: {error}</Status>
-      )}
-
-      {answer && (
-        <Card title="Answer">
-          <pre className="codeblock">{answer}</pre>
-        </Card>
-      )}
-
-      {retrieved && (
-        <Card title="Retrieved context">
-          <pre className="codeblock">{retrieved}</pre>
-        </Card>
-      )}
+          {uploadStatus && <Status tone="success">{uploadStatus}</Status>}
+        </div>
+      </Card>
 
       <Card
         title="Stored transactions"
@@ -257,13 +224,13 @@ export default function App() {
               <tbody>
                 {transactions.map((tx) => (
                   <tr key={tx.id}>
-                    <td>{tx.date || "—"}</td>
-                    <td>{tx.merchant || "—"}</td>
-                    <td>{tx.category || "—"}</td>
+                    <td>{tx.date || "-"}</td>
+                    <td>{tx.merchant || "-"}</td>
+                    <td>{tx.category || "-"}</td>
                     <td>
                       {tx.amount != null
                         ? `${tx.amount} ${tx.currency || ""}`.trim()
-                        : "—"}
+                        : "-"}
                     </td>
                   </tr>
                 ))}
@@ -272,6 +239,52 @@ export default function App() {
           </div>
         )}
       </Card>
+
+      <div className="grid two">
+        <Card
+          title="Ask a finance question"
+          subtitle='Examples: "How much did I spend on groceries last month?" or "What are my biggest spending categories?"'
+        >
+          <div className="stack">
+            <textarea
+              rows="4"
+              placeholder="Type your question..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+            />
+            <div className="actions">
+              <button onClick={handleAsk} disabled={loading}>
+                {loading ? "Thinking..." : "Ask Advisor"}
+              </button>
+              <button className="ghost" onClick={() => setQuestion("")}>
+                Clear
+              </button>
+            </div>
+            {error && <Status tone="error">Error: {error}</Status>}
+          </div>
+        </Card>
+
+        <Card title="Advisor response">
+          <div ref={responseRef} className="stack">
+            {loading && <Status tone="neutral">Thinking...</Status>}
+            {answer && (
+              <>
+                <h4 className="muted">Answer</h4>
+                <pre className="codeblock">{answer}</pre>
+              </>
+            )}
+            {retrieved && (
+              <>
+                <h4 className="muted">Retrieved context</h4>
+                <pre className="codeblock">{retrieved}</pre>
+              </>
+            )}
+            {!answer && !retrieved && !loading && (
+              <p className="muted">Ask a question to see the advisor's answer.</p>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
