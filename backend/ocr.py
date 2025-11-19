@@ -105,6 +105,41 @@ def extract_total_amount(ocr_text: str) -> Optional[float]:
         return max(candidates)
 
     return None
+def detect_currency(ocr_text: str) -> str:
+    text = ocr_text.lower()
+
+    # Symbol-based detection
+    if "$" in ocr_text:
+        return "USD"
+
+    if "€" in ocr_text:
+        return "EUR"
+
+    if "£" in ocr_text:
+        return "GBP"
+
+    if "₹" in ocr_text or "rs." in text or "inr" in text:
+        return "INR"
+
+    if "¥" in ocr_text or "cny" in text or "rmb" in text:
+        return "CNY"
+
+    if "cad" in text:
+        return "CAD"
+
+    if "aud" in text:
+        return "AUD"
+
+    # Word-based (fallback)
+    if "usd" in text:
+        return "USD"
+    if "eur" in text:
+        return "EUR"
+    if "gbp" in text:
+        return "GBP"
+
+    # Final fallback
+    return "USD"
 
 
 
@@ -141,11 +176,12 @@ def simple_parse_receipt(ocr_text: str) -> Dict[str, Any]:
 
     # ----- Category -----
     category = categorize_transaction(merchant or "", ocr_text)
-
+    currency = detect_currency(ocr_text)
+    
     return {
         "date": date,
         "merchant": merchant,
         "category": category,
         "amount": amount,
-        "currency": "USD",
+        "currency": currency,
     }
