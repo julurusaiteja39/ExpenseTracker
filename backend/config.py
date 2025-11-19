@@ -15,3 +15,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Embeddings model id (used by langchain-openai)
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+
+# Vector store chunking configuration
+VECTOR_CHUNK_SIZE = int(os.getenv("VECTOR_CHUNK_SIZE", "500"))
+VECTOR_CHUNK_OVERLAP = int(os.getenv("VECTOR_CHUNK_OVERLAP", "50"))

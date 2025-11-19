@@ -7,8 +7,14 @@ from typing import List, Dict, Any, Optional
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from .config import DATA_DIR, OPENAI_EMBEDDING_MODEL
+from .config import (
+    DATA_DIR,
+    OPENAI_EMBEDDING_MODEL,
+    VECTOR_CHUNK_SIZE,
+    VECTOR_CHUNK_OVERLAP,
+)
 from .models import Transaction
 
 TRANSACTIONS_PATH = DATA_DIR / "transactions.jsonl"
@@ -17,6 +23,12 @@ VECTOR_INDEX_FILE = VECTORSTORE_PATH / "index.faiss"
 VECTOR_META_FILE = VECTORSTORE_PATH / "index.pkl"
 
 _vectorstore: Optional[FAISS] = None
+_text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=VECTOR_CHUNK_SIZE,
+    chunk_overlap=VECTOR_CHUNK_OVERLAP,
+    separators=["\n\n", "\n", " ", ""],
+    keep_separator=False,
+)
 
 
 def _ensure_files():
@@ -49,18 +61,20 @@ def append_transaction(tx: Transaction) -> None:
         f.write(json.dumps(tx.model_dump()) + "\n")
 
 
-def _transaction_to_doc(tx: Transaction) -> Document:
-    text_parts = [
+def _transaction_summary(tx: Transaction) -> str:
+    parts = [
         f"Transaction ID: {tx.id}",
         f"Date: {tx.date or 'unknown'}",
         f"Merchant: {tx.merchant or 'unknown'}",
         f"Category: {tx.category or 'uncategorized'}",
         f"Amount: {tx.amount or 'unknown'} {tx.currency or ''}".strip(),
-        "",
-        f"Raw Text: {tx.raw_text}",
     ]
-    content = "\n".join(text_parts)
-    metadata = {
+    return "\n".join(parts)
+
+
+def _transaction_to_docs(tx: Transaction) -> List[Document]:
+    summary = _transaction_summary(tx)
+    base_metadata = {
         "id": tx.id,
         "date": tx.date,
         "merchant": tx.merchant,
@@ -68,7 +82,26 @@ def _transaction_to_doc(tx: Transaction) -> Document:
         "amount": tx.amount,
         "currency": tx.currency,
     }
-    return Document(page_content=content, metadata=metadata)
+    raw_text = (tx.raw_text or "").strip()
+    # Ensure at least one chunk so every transaction is searchable.
+    chunks = _text_splitter.split_text(raw_text) if raw_text else ["(no receipt text provided)"]
+    total = len(chunks)
+    docs: List[Document] = []
+    for idx, chunk in enumerate(chunks, start=1):
+        content = "\n\n".join(
+            [
+                summary,
+                f"Receipt chunk {idx} of {total}:",
+                chunk,
+            ]
+        ).strip()
+        metadata = {
+            **base_metadata,
+            "chunk_index": idx,
+            "chunk_count": total,
+        }
+        docs.append(Document(page_content=content, metadata=metadata))
+    return docs
 
 
 def get_vectorstore() -> FAISS:
@@ -103,7 +136,9 @@ def get_vectorstore() -> FAISS:
 
     # Build from existing transactions if any
     txs = load_transactions()
-    docs = [_transaction_to_doc(tx) for tx in txs] if txs else []
+    docs: List[Document] = []
+    for tx in txs:
+        docs.extend(_transaction_to_docs(tx))
     if docs:
         _vectorstore = FAISS.from_documents(docs, embeddings)
     else:
@@ -117,8 +152,8 @@ def get_vectorstore() -> FAISS:
 
 def add_transaction_to_vectorstore(tx: Transaction) -> None:
     vs = get_vectorstore()
-    doc = _transaction_to_doc(tx)
-    vs.add_documents([doc])
+    docs = _transaction_to_docs(tx)
+    vs.add_documents(docs)
     VECTORSTORE_PATH.mkdir(exist_ok=True)
     vs.save_local(str(VECTORSTORE_PATH))
 

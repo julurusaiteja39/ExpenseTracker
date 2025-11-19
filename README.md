@@ -5,12 +5,13 @@ FastAPI + LangGraph + React demo that OCRs receipts, parses transactions, stores
 - **Backend**: FastAPI, LangChain, LangGraph, FAISS, OpenAI embeddings/LLM, Pytesseract OCR
 - **Frontend**: Vite + React, responsive UI for upload/ask/inspect/reset
 - **NLP / AI**: OCR, regex-based parsing (amount/merchant/date/category), embeddings + retriever + multi-step LangGraph (retrieve → analyze → answer)
-- **Quality of life**: Date extractor handles `YYYY-MM-DD`, `MM/DD/YYYY`, `MM-DD-YYYY`, `MM/DD/YY`; falls back to today’s upload date if none is found. One-click “Delete all data” to reset transactions/vector store.
+- **Chunked RAG context**: OCR'd receipt text is split into configurable chunks before being embedded so long invoices stay searchable.
+- **Quality of life**: Date extractor handles `YYYY-MM-DD`, `MM/DD/YYYY`, `MM-DD-YYYY`, `MM/DD/YY`; falls back to today's upload date if none is found. One-click "Delete all data" to reset transactions/vector store.
 
 ## Folder structure
 
-- `backend/` — FastAPI app, OCR, LangGraph workflow, storage utilities
-- `frontend/` — Vite + React app (development server and production build)
+- `backend/` – FastAPI app, OCR, LangGraph workflow, storage utilities
+- `frontend/` – Vite + React app (development server and production build)
 
 ---
 
@@ -35,13 +36,17 @@ copy .env.example .env      # Windows
 # cp .env.example .env      # macOS/Linux
 ```
 
-Set your keys/models:
+Set your keys/models (plus optional chunking overrides):
 
 ```env
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+VECTOR_CHUNK_SIZE=500
+VECTOR_CHUNK_OVERLAP=50
 ```
+
+`VECTOR_CHUNK_SIZE` and `VECTOR_CHUNK_OVERLAP` control how OCR text is chunked before it is embedded in FAISS. Smaller chunks improve recall for long receipts, while larger chunks capture more surrounding context.
 
 Run the backend:
 
@@ -78,7 +83,7 @@ Configuration:
 
 ## 3) Resetting data
 
-- Via frontend: click “Delete all data” in the Stored transactions card (with confirmation).
+- Via frontend: click "Delete all data" in the Stored transactions card (with confirmation).
 - Via API: `POST http://127.0.0.1:8000/reset_data`
 - Manual: remove `backend/data/transactions.jsonl` and the vector store folder `backend/data/vectorstore/` (will auto-recreate on next upload).
 
