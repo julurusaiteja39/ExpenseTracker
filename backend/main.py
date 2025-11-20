@@ -56,6 +56,8 @@ def ask_question(payload: AskQuestionRequest):
     return AskQuestionResponse(
         answer=final_state.get("answer", "Sorry, I could not generate an answer."),
         retrieved_context=final_state.get("retrieved_context", ""),
+        analysis_points=final_state.get("analysis_points", []),
+        tips=final_state.get("tips", []),
     )
 
 

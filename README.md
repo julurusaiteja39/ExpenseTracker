@@ -6,6 +6,7 @@ FastAPI + LangGraph + React demo that OCRs receipts, parses transactions, stores
 - **Frontend**: Vite + React, responsive UI for upload/ask/inspect/reset
 - **NLP / AI**: OCR, regex-based parsing (amount/merchant/date/category), embeddings + retriever + multi-step LangGraph (retrieve → analyze → answer)
 - **Chunked RAG context**: OCR'd receipt text is split into configurable chunks before being embedded so long invoices stay searchable.
+- **Structured outputs**: LangGraph nodes use typed schemas so the API also returns structured spending insights and tips alongside the final answer.
 - **Quality of life**: Date extractor handles `YYYY-MM-DD`, `MM/DD/YYYY`, `MM-DD-YYYY`, `MM/DD/YY`; falls back to today's upload date if none is found. One-click "Delete all data" to reset transactions/vector store.
 
 ## Folder structure

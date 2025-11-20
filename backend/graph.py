@@ -1,5 +1,6 @@
-from typing import TypedDict
+from typing import List, TypedDict
 
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
@@ -7,11 +8,31 @@ from .config import OPENAI_MODEL
 from .storage import get_vectorstore
 
 
+class SpendingAnalysis(BaseModel):
+    bullet_points: List[str] = Field(
+        ...,
+        description="3-5 concise observations about the user's spending that relate to the question.",
+        min_items=3,
+        max_items=5,
+    )
+
+
+class AdvisorAnswer(BaseModel):
+    response: str = Field(..., description="Direct answer to the user's finance question.")
+    tips: List[str] = Field(
+        ...,
+        description="2-3 short, actionable money management tips tailored to the user's pattern.",
+        min_items=2,
+        max_items=3,
+    )
+
+
 class AdvisorState(TypedDict, total=False):
     question: str
     retrieved_context: str
-    analysis: str
+    analysis_points: List[str]
     answer: str
+    tips: List[str]
 
 
 def retrieve_node(state: AdvisorState) -> AdvisorState:
@@ -25,6 +46,7 @@ def retrieve_node(state: AdvisorState) -> AdvisorState:
 
 def analyze_node(state: AdvisorState) -> AdvisorState:
     llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0.2)
+    structured_llm = llm.with_structured_output(SpendingAnalysis)
     question = state["question"]
     context = state.get("retrieved_context", "")
 
@@ -38,15 +60,19 @@ Relevant past transactions:
 
 Briefly (3-5 bullet points) analyze this user's recent spending pattern that is relevant to the question.
 """
-    resp = llm.invoke(prompt)
-    return {"analysis": resp.content}
+    resp = structured_llm.invoke(prompt)
+    return {"analysis_points": resp.bullet_points}
 
 
 def answer_node(state: AdvisorState) -> AdvisorState:
     llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0.3)
+    structured_llm = llm.with_structured_output(AdvisorAnswer)
     question = state["question"]
     context = state.get("retrieved_context", "")
-    analysis = state.get("analysis", "")
+    analysis_points = state.get("analysis_points", [])
+    analysis_text = (
+        "\n".join(f"- {point}" for point in analysis_points) if analysis_points else "No structured analysis available."
+    )
 
     prompt = f"""You are a friendly personal finance assistant.
 
@@ -57,14 +83,18 @@ Relevant past transactions:
 {context}
 
 Analysis of spending:
-{analysis}
+{analysis_text}
 
 Now answer the user's question in clear, simple language.
 If it makes sense, include concrete numbers (like total amount spent per category, approximate monthly spending, etc.).
 Also include 2-3 short, practical tips for better money management based on their pattern.
 """
-    resp = llm.invoke(prompt)
-    return {"answer": resp.content}
+    resp = structured_llm.invoke(prompt)
+    tips_text = "\n".join(f"- {tip}" for tip in resp.tips)
+    answer_text = resp.response
+    if tips_text:
+        answer_text = f"{resp.response}\n\nTips:\n{tips_text}"
+    return {"answer": answer_text, "tips": resp.tips}
 
 
 def build_workflow():
