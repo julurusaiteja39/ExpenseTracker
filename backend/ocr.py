@@ -1,19 +1,90 @@
+import os
 from io import BytesIO
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import re
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import pytesseract
+from PyPDF2 import PdfReader
+
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:  # pragma: no cover - optional dependency
+    convert_from_bytes = None
+
+POPPLER_PATH = os.getenv("POPPLER_PATH")
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-def extract_text(image_bytes: bytes) -> str:
-    """Run OCR on an image and return raw text."""
+def _looks_like_pdf(content_type: Optional[str], filename: Optional[str], file_bytes: bytes) -> bool:
+    if content_type and "pdf" in content_type.lower():
+        return True
+    if filename and filename.lower().endswith(".pdf"):
+        return True
+    return file_bytes.startswith(b"%PDF")
+
+
+def _extract_text_from_image_bytes(image_bytes: bytes) -> str:
     image = Image.open(BytesIO(image_bytes))
-    # Ensure it's in a format pytesseract likes
     image = image.convert("RGB")
-    text = pytesseract.image_to_string(image)
-    return text
+    return pytesseract.image_to_string(image)
+
+
+def _ocr_pdf_pages(pdf_bytes: bytes) -> str:
+    """Fallback OCR for PDFs using pdf2image if textual extraction fails."""
+    if convert_from_bytes is None:
+        raise ValueError(
+            "Unable to extract text from this PDF. Install pdf2image + poppler to OCR scanned PDFs."
+        )
+    images = convert_from_bytes(pdf_bytes, poppler_path=POPPLER_PATH)
+    ocr_segments: List[str] = []
+    for img in images:
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        ocr_segments.append(_extract_text_from_image_bytes(buf.getvalue()))
+    return "\n".join(seg.strip() for seg in ocr_segments if seg.strip())
+
+
+def extract_text(file_bytes: bytes, content_type: Optional[str] = None, filename: Optional[str] = None) -> str:
+    """Extract raw text from uploaded content (images or PDFs)."""
+    if _looks_like_pdf(content_type, filename, file_bytes):
+        return extract_text_from_pdf(file_bytes)
+
+    try:
+        return _extract_text_from_image_bytes(file_bytes)
+    except UnidentifiedImageError as exc:
+        raise ValueError(
+            "Unsupported file type. Please upload an image (PNG/JPG/HEIC/etc.) or a PDF."
+        ) from exc
+
+
+def extract_text_from_pdf(pdf_bytes: bytes) -> str:
+    try:
+        reader = PdfReader(BytesIO(pdf_bytes))
+    except Exception:
+        reader = None
+
+    text_chunks: List[str] = []
+    if reader is not None:
+        if reader.is_encrypted:
+            try:
+                reader.decrypt("")  # type: ignore[arg-type]
+            except Exception:
+                pass
+        for page in reader.pages:
+            try:
+                text = page.extract_text() or ""
+            except Exception:
+                text = ""
+            if text.strip():
+                text_chunks.append(text)
+
+    combined = "\n".join(chunk.strip() for chunk in text_chunks if chunk.strip())
+    if combined:
+        return combined
+
+    # If we couldn't read textual content, try OCR via images
+    return _ocr_pdf_pages(pdf_bytes)
 
 def categorize_transaction(merchant: str, text: str = "") -> str:
     combined = f"{merchant} {text}".lower()

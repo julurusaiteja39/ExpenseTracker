@@ -7,6 +7,7 @@ FastAPI + LangGraph + React demo that OCRs receipts, parses transactions, stores
 - **NLP / AI**: OCR, regex-based parsing (amount/merchant/date/category), embeddings + retriever + multi-step LangGraph (retrieve → analyze → answer)
 - **Chunked RAG context**: OCR'd receipt text is split into configurable chunks before being embedded so long invoices stay searchable.
 - **Structured outputs**: LangGraph nodes use typed schemas so the API also returns structured spending insights and tips alongside the final answer.
+- **Universal uploads**: Accepts PDFs and virtually any image type; PDFs use text extraction with OCR fallback (requires pdf2image + Poppler for scanned docs).
 - **Quality of life**: Date extractor handles `YYYY-MM-DD`, `MM/DD/YYYY`, `MM-DD-YYYY`, `MM/DD/YY`; falls back to today's upload date if none is found. One-click "Delete all data" to reset transactions/vector store.
 
 ## Folder structure
@@ -45,9 +46,13 @@ OPENAI_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 VECTOR_CHUNK_SIZE=500
 VECTOR_CHUNK_OVERLAP=50
+POPPLER_PATH=C:\path\to\poppler\bin
 ```
 
-`VECTOR_CHUNK_SIZE` and `VECTOR_CHUNK_OVERLAP` control how OCR text is chunked before it is embedded in FAISS. Smaller chunks improve recall for long receipts, while larger chunks capture more surrounding context.
+`VECTOR_CHUNK_SIZE` and `VECTOR_CHUNK_OVERLAP` control how OCR text is chunked before it is embedded in FAISS. Smaller chunks improve recall for long receipts, while larger chunks capture more surrounding context.  
+`POPPLER_PATH` is optional but recommended on Windows so `pdf2image` can locate Poppler when OCRing scanned PDFs.
+
+For scanned PDFs you’ll also need the Poppler binaries installed locally. Download them from https://github.com/oschwartz10612/poppler-windows/releases (Windows) or via `brew install poppler` (macOS/Linux) and point `POPPLER_PATH` to the `bin` directory if required.
 
 Run the backend:
 

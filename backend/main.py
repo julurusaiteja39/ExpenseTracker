@@ -63,14 +63,19 @@ def ask_question(payload: AskQuestionRequest):
 
 @app.post("/upload_receipt", response_model=UploadReceiptResponse)
 async def upload_receipt(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
-        return JSONResponse(
-            status_code=400,
-            content={"detail": "Please upload an image file (jpg, png, etc.)."},
-        )
+    if not file:
+        return JSONResponse(status_code=400, content={"detail": "No file uploaded."})
 
     contents = await file.read()
-    ocr_text = extract_text(contents)
+    try:
+        ocr_text = extract_text(contents, content_type=file.content_type, filename=file.filename)
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+    except Exception as exc:  # pragma: no cover
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Failed to process the uploaded file: {exc}"},
+        )
     parsed = simple_parse_receipt(ocr_text)
     if not parsed.get("date"):
         # Fallback to upload date when invoice date is missing

@@ -85,7 +85,7 @@ export default function App() {
     setUploadStatus("");
     setError("");
     if (!file) {
-      setError("Please choose an image of a receipt first.");
+      setError("Please choose an image or PDF of a receipt first.");
       return;
     }
     const formData = new FormData();
@@ -174,11 +174,11 @@ export default function App() {
           <label className="file-input">
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,application/pdf"
               onChange={handleFileChange}
               disabled={uploading}
             />
-            <span>{file ? file.name : "Choose an image file"}</span>
+            <span>{file ? file.name : "Choose an image or PDF file"}</span>
           </label>
           <div className="actions">
             <button onClick={handleUpload} disabled={uploading}>

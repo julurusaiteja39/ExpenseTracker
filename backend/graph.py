@@ -58,7 +58,8 @@ User question:
 Relevant past transactions:
 {context}
 
-Briefly (3-5 bullet points) analyze this user's recent spending pattern that is relevant to the question.
+Briefly (3-5 bullet points) analyze the user's spending. You MUST mention every category present in the retrieved transactions (including “other” or unknown categories) and include their amounts.
+
 """
     resp = structured_llm.invoke(prompt)
     return {"analysis_points": resp.bullet_points}
