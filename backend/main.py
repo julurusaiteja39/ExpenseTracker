@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from .config import OPENAI_API_KEY
 from .models import AskQuestionRequest, AskQuestionResponse, UploadReceiptResponse, Transaction
 from .graph import build_workflow
-from .ocr import extract_text, simple_parse_receipt
+from .ocr import extract_text, simple_parse_receipt, is_probable_receipt
 from .storage import (
     load_transactions,
     append_transaction,
@@ -80,6 +80,12 @@ async def upload_receipt(file: UploadFile = File(...)):
     if not parsed.get("date"):
         # Fallback to upload date when invoice date is missing
         parsed["date"] = datetime.date.today().isoformat()
+
+    if not is_probable_receipt(ocr_text, parsed):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "This upload does not look like a receipt or invoice. Please upload a receipt image or PDF."},
+        )
 
     tx = create_transaction_from_parsed(parsed, raw_text=ocr_text)
     append_transaction(tx)

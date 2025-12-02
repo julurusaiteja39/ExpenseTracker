@@ -212,6 +212,67 @@ def detect_currency(ocr_text: str) -> str:
     # Final fallback
     return "USD"
 
+def is_probable_receipt(ocr_text: str, parsed: Optional[Dict[str, Any]] = None) -> bool:
+    """
+    Lightweight guardrail to block obviously non-receipt uploads (e.g., resumes).
+    Consider it a receipt if we find a money amount or common receipt/invoice terms.
+    If resume-heavy keywords show up and no money/receipt signals are present, reject.
+    """
+    text = ocr_text.lower()
+    amount = parsed.get("amount") if parsed else None
+    if amount is None:
+        amount = extract_total_amount(ocr_text)
+
+    receipt_keywords = [
+        "receipt",
+        "invoice",
+        "amount due",
+        "total",
+        "subtotal",
+        "balance due",
+        "grand total",
+        "tax",
+        "order #",
+    ]
+    has_receipt_terms = any(k in text for k in receipt_keywords)
+
+    currency_cues = ["$", "€", "£", "rs.", "inr", "cad", "aud", "cny", "rmb", "usd", "eur", "gbp"]
+    has_currency_cue = any(cue in text for cue in currency_cues)
+
+    # If the upload looks like a resume/CV, reject outright unless explicit receipt terms appear.
+    if _is_likely_resume(text):
+        return bool(has_receipt_terms and has_currency_cue and amount is not None)
+
+    # Require explicit receipt/currency cues.
+    if not (has_receipt_terms or has_currency_cue):
+        return False
+
+    # Require an amount when relying only on currency cues (to avoid GPA/score numbers).
+    if not has_receipt_terms and (not has_currency_cue or amount is None):
+        return False
+
+    # If we have receipt terms, allow (optionally strengthened by amount/currency cues).
+    return True
+
+
+def _is_likely_resume(text: str) -> bool:
+    """Detect resume/CV style documents to block them explicitly."""
+    resume_keywords = [
+        "resume",
+        "curriculum vitae",
+        "education",
+        "experience",
+        "skills",
+        "objective",
+        "summary",
+        "projects",
+        "technical skills",
+        "work experience",
+        "certifications",
+    ]
+    hits = sum(1 for k in resume_keywords if k in text)
+    return hits >= 2
+
 
 
 def simple_parse_receipt(ocr_text: str) -> Dict[str, Any]:
