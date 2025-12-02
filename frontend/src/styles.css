@@ -240,6 +240,68 @@ button.danger {
   border-bottom: none;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(1px);
+  z-index: 20;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+  border: 1px solid #e2e8f0;
+  width: min(480px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modal__header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal__body {
+  margin: 0;
+  color: #0f172a;
+}
+
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.icon-button {
+  background: #e2e8f0;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: #cbd5e1;
+}
+
 @media (max-width: 640px) {
   .hero h1 {
     font-size: 26px;

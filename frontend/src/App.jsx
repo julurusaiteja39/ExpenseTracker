@@ -18,6 +18,29 @@ function Status({ tone = "neutral", children }) {
   return <div className={`status status--${tone}`}>{children}</div>;
 }
 
+function Modal({ title = "Something went wrong", message, onClose }) {
+  if (!message) return null;
+
+  return (
+    <div className="modal-backdrop" role="alertdialog" aria-modal="true" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal__header">
+          <h3>{title}</h3>
+          <button className="icon-button" aria-label="Close dialog" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <p className="modal__body">{message}</p>
+        <div className="modal__footer">
+          <button className="ghost" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const backendBase = useMemo(
     () => import.meta.env.VITE_BACKEND_URL || DEFAULT_BACKEND,
@@ -156,6 +179,8 @@ export default function App() {
 
   return (
     <div className="page">
+      <Modal message={error} onClose={() => setError("")} />
+
       <header className="hero">
         <div className="pill">Agentic RAG | OCR | LangGraph</div>
         <h1>Personal Finance Advisor</h1>
@@ -260,7 +285,6 @@ export default function App() {
                 Clear
               </button>
             </div>
-            {error && <Status tone="error">Error: {error}</Status>}
           </div>
         </Card>
 
