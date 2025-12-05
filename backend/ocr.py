@@ -14,7 +14,7 @@ except ImportError:  # pragma: no cover - optional dependency
 
 POPPLER_PATH = os.getenv("POPPLER_PATH")
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 def _looks_like_pdf(content_type: Optional[str], filename: Optional[str], file_bytes: bytes) -> bool:
     if content_type and "pdf" in content_type.lower():

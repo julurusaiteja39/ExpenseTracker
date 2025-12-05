@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const DEFAULT_BACKEND = "http://127.0.0.1:8000";
+const DEFAULT_BACKEND = "https://advisor-backend-beaqh0gsf9huaqbx.centralus-01.azurewebsites.net";
 
 function Card({ title, subtitle, children }) {
   return (

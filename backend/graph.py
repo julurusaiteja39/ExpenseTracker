@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
-from .config import OPENAI_MODEL
-from .storage import get_vectorstore
+from config import OPENAI_MODEL
+from storage import get_vectorstore
 
 
 class SpendingAnalysis(BaseModel):
@@ -159,13 +159,18 @@ Also include 2-3 short, practical tips for better money management based on thei
 def build_workflow():
     graph = StateGraph(AdvisorState)
 
+    # Nodes
     graph.add_node("retrieve", retrieve_node)
     graph.add_node("analyze", analyze_node)
-    graph.add_node("answer", answer_node)
+    graph.add_node("generate_answer", answer_node)
 
+    # Entry point
     graph.set_entry_point("retrieve")
+
+    # Edges
     graph.add_edge("retrieve", "analyze")
-    graph.add_edge("analyze", "answer")
-    graph.add_edge("answer", END)
+    graph.add_edge("analyze", "generate_answer")
+    graph.add_edge("generate_answer", END)
 
     return graph
+

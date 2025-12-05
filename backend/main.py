@@ -4,11 +4,11 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .config import OPENAI_API_KEY
-from .models import AskQuestionRequest, AskQuestionResponse, UploadReceiptResponse, Transaction
-from .graph import build_workflow
-from .ocr import extract_text, simple_parse_receipt, is_probable_receipt
-from .storage import (
+from config import OPENAI_API_KEY
+from models import AskQuestionRequest, AskQuestionResponse, UploadReceiptResponse, Transaction
+from graph import build_workflow
+from ocr import extract_text, simple_parse_receipt, is_probable_receipt
+from storage import (
     load_transactions,
     append_transaction,
     add_transaction_to_vectorstore,

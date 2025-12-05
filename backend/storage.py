@@ -9,13 +9,13 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from .config import (
+from config import (
     DATA_DIR,
     OPENAI_EMBEDDING_MODEL,
     VECTOR_CHUNK_SIZE,
     VECTOR_CHUNK_OVERLAP,
 )
-from .models import Transaction
+from models import Transaction
 
 TRANSACTIONS_PATH = DATA_DIR / "transactions.jsonl"
 VECTORSTORE_PATH = DATA_DIR / "vectorstore"
